@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f8f2">
+  <title>ระบบจัดการฟาร์มโคนม</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #24372c;
+      --muted: #78847a;
+      --line: #e7ece5;
+      --paper: #ffffff;
+      --canvas: #f5f8f2;
+      --green: #34794f;
+      --green-dark: #245a3b;
+      --green-soft: #eaf3e9;
+      --lime: #d8e9b6;
+      --orange: #e8a454;
+      --orange-soft: #fff2df;
+      --red: #c86450;
+      --red-soft: #fbece7;
+      --shadow: 0 8px 28px rgba(43, 67, 48, .06);
+      font-family: "Noto Sans Thai", "Leelawadee UI", Tahoma, sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--canvas); color: var(--ink); min-height: 100vh; }
+    button, input, select, textarea { font: inherit; }
+    button { color: inherit; cursor: pointer; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #9cc7a4; outline-offset: 2px; }
+    .app-shell { min-height: 100vh; }
+    .sidebar { position: fixed; inset: 0 auto 0 0; width: 252px; padding: 26px 16px 20px; background: #fff; border-right: 1px solid var(--line); display: flex; flex-direction: column; z-index: 5; }
+    .brand { display: flex; align-items: center; gap: 11px; padding: 2px 10px 28px; }
+    .brand-mark { width: 41px; height: 41px; border-radius: 13px; background: var(--green); display: grid; place-items: center; color: #fff; font-size: 23px; }
+    .brand-name { font-weight: 750; font-size: 16px; line-height: 1.3; }
+    .brand-sub { color: var(--muted); font-size: 11px; margin-top: 3px; }
+    .nav-label { padding: 0 12px 10px; text-transform: uppercase; letter-spacing: 0; color: #9aa49a; font-size: 11px; }
+    .nav-list { display: grid; gap: 5px; }
+    .nav-item { border: 0; background: transparent; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 47px; border-radius: 9px; padding: 0 12px; color: #617064; text-align: left; font-size: 13px; }
+    .nav-item:hover { background: #f5f8f3; color: var(--green-dark); }
+    .nav-item.active { color: var(--green-dark); background: var(--green-soft); font-weight: 700; }
+    .nav-icon { width: 23px; text-align: center; font-size: 18px; line-height: 1; }
+    .nav-count { margin-left: auto; min-width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; font-size: 11px; background: var(--orange-soft); color: #9b642b; }
+    .sidebar-bottom { margin-top: auto; }
+    .sidebar-tools { display: flex; align-items: center; gap: 12px; padding: 0 8px 14px; margin-bottom: 13px; border-bottom: 1px solid var(--line); }
+    .sidebar-tools .profile-chip { min-width: 0; }
+    .farm-mini { padding: 14px 13px; border: 1px solid var(--line); border-radius: 9px; display: flex; gap: 10px; align-items: center; background: #fbfcfa; }
+    .farm-avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: var(--green); background: #e7f1e5; font-size: 17px; }
+    .farm-mini strong { font-size: 12px; display: block; }
+    .farm-mini small { color: var(--muted); font-size: 10px; }
+    main { margin-left: 252px; min-height: 100vh; padding: 26px 34px 50px; }
+    .topbar { max-width: 1320px; margin: 0 auto 25px; display: flex; align-items: center; justify-content: space-between; min-height: 48px; }
+    .crumb { color: var(--muted); font-size: 12px; }
+    .top-actions { display: none; align-items: center; gap: 14px; }
+    .icon-button { position: relative; border: 1px solid var(--line); background: #fff; border-radius: 8px; width: 39px; height: 39px; font-size: 17px; }
+    .notification-dot { position: absolute; width: 7px; height: 7px; border: 1px solid #fff; background: var(--red); border-radius: 50%; top: 8px; right: 8px; }
+    .profile-chip { display: flex; align-items: center; gap: 9px; }
+    .profile-avatar { height: 37px; width: 37px; border-radius: 50%; background: #e8d7bd; display: grid; place-items: center; font-size: 17px; }
+    .profile-chip strong { display: block; font-size: 12px; }
+    .profile-chip small { display: block; color: var(--muted); font-size: 10px; margin-top: 2px; }
+    .content { max-width: 1320px; margin: 0 auto; }
+    .page { display: none; animation: arrive .22s ease-out; }
+    .page.active { display: block; }
+    @keyframes arrive { from { opacity: .5; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin: 4px 0 22px; }
+    h1 { font-size: 23px; line-height: 1.4; margin: 0; letter-spacing: 0; }
+    .page-heading p { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+    .date-label { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .button { border: 1px solid transparent; min-height: 39px; border-radius: 7px; padding: 0 14px; font-size: 12px; font-weight: 650; display: inline-flex; gap: 8px; align-items: center; justify-content: center; }
+    .button-primary { background: var(--green); color: #fff; }
+    .button-primary:hover { background: var(--green-dark); }
+    .button-light { background: #fff; border-color: var(--line); }
+    .button-light:hover { background: #f6f9f5; }
+    .button-quiet { background: var(--green-soft); color: var(--green-dark); }
+    .button-danger { background: var(--red-soft); color: #a44939; }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; margin-bottom: 16px; }
+    .stat-card { padding: 17px 18px; background: var(--paper); border: 1px solid var(--line); border-radius: 9px; min-height: 119px; }
+    .stat-top { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 11px; }
+    .stat-icon { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 8px; background: var(--green-soft); color: var(--green); font-size: 16px; }
+    .stat-value { font-size: 26px; font-weight: 750; line-height: 1.25; margin-top: 8px; }
+    .stat-unit { color: var(--muted); font-size: 11px; font-weight: 500; }
+    .stat-note { color: var(--green); font-size: 10px; margin-top: 4px; }
+    .stat-note.warn { color: #a56b30; }
+    .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(260px, .9fr); gap: 15px; align-items: start; }
+    .panel { background: #fff; border: 1px solid var(--line); border-radius: 9px; padding: 18px; }
+    .panel + .panel { margin-top: 15px; }
+    .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 15px; }
+    .panel-heading h2 { font-size: 14px; margin: 0; }
+    .panel-heading p { margin: 4px 0 0; color: var(--muted); font-size: 10px; }
+    .text-link { padding: 5px 0; border: 0; background: none; color: var(--green); font-size: 11px; font-weight: 650; white-space: nowrap; }
+    .select-small { border: 1px solid var(--line); background: #fff; border-radius: 6px; padding: 6px 9px; font-size: 10px; color: var(--muted); }
+    .chart-summary { display: flex; align-items: baseline; gap: 7px; margin: 2px 0 5px; }
+    .chart-summary strong { font-size: 25px; }
+    .chart-summary span { color: var(--muted); font-size: 10px; }
+    .chart-summary .positive { margin-left: auto; color: var(--green); }
+    .bar-chart { display: flex; align-items: stretch; gap: 8px; height: 142px; padding: 9px 4px 0; border-bottom: 1px solid var(--line); background: repeating-linear-gradient(to bottom, transparent 0, transparent 34px, #edf1eb 35px, transparent 36px); }
+    .chart-day { flex: 1; display: flex; align-items: end; justify-content: center; gap: 3px; position: relative; min-width: 0; }
+    .chart-bar { width: min(16px, 39%); min-height: 8px; border-radius: 4px 4px 0 0; background: #b9d6b3; transition: height .25s; }
+    .chart-bar.second { background: var(--green); }
+    .chart-day-labels { display: flex; justify-content: space-around; color: var(--muted); font-size: 9px; padding-top: 8px; }
+    .chart-legend { display: flex; gap: 15px; color: var(--muted); font-size: 10px; margin-top: 14px; }
+    .legend-dot { width: 8px; height: 8px; display: inline-block; border-radius: 3px; margin-right: 5px; background: #b9d6b3; }
+    .legend-dot.dark { background: var(--green); }
+    .alert-list { display: grid; gap: 0; }
+    .alert-item { display: flex; gap: 10px; padding: 12px 0; border-bottom: 1px solid #eff2ed; }
+    .alert-item:last-child { border-bottom: 0; padding-bottom: 0; }
+    .alert-symbol { width: 29px; height: 29px; flex: none; display: grid; place-items: center; border-radius: 8px; background: var(--orange-soft); font-size: 14px; }
+    .alert-symbol.red { background: var(--red-soft); }
+    .alert-item strong { display: block; font-size: 11px; line-height: 1.5; }
+    .alert-item small { color: var(--muted); font-size: 10px; display: block; margin-top: 2px; }
+    .alert-item .alert-action { display: block; border: 0; background: none; color: var(--green); padding: 4px 0 0; font-size: 10px; }
+    .quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+    .quick-action { min-height: 74px; border: 1px solid var(--line); background: #fff; border-radius: 8px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 11px; gap: 7px; text-align: left; font-size: 10px; color: #4d5e50; }
+    .quick-action:hover { background: #f7faf5; border-color: #cddfca; }
+    .quick-action span { font-size: 17px; }
+    .cow-status { display: flex; gap: 14px; align-items: center; }
+    .donut { width: 92px; height: 92px; flex: none; border-radius: 50%; background: conic-gradient(var(--green) 0 68%, #b7d78c 68% 84%, #e9eee6 84%); display: grid; place-items: center; position: relative; }
+    .donut::before { content: ""; position: absolute; width: 63px; height: 63px; border-radius: 50%; background: #fff; }
+    .donut strong { position: relative; font-size: 19px; }
+    .status-legend { flex: 1; display: grid; gap: 8px; }
+    .status-row { display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--muted); }
+    .status-row strong { color: var(--ink); font-size: 11px; }
+    .status-name::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 2px; margin-right: 7px; background: var(--green); }
+    .status-row:nth-child(2) .status-name::before { background: #b7d78c; }
+    .status-row:nth-child(3) .status-name::before { background: #e9eee6; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; min-width: 530px; }
+    th { color: #8a958b; font-size: 10px; font-weight: 550; padding: 10px 9px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    td { font-size: 11px; padding: 12px 9px; border-bottom: 1px solid #eff2ed; white-space: nowrap; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .cow-cell { display: flex; gap: 9px; align-items: center; }
+    .cow-face { width: 31px; height: 31px; border-radius: 8px; background: #f2eadb; display: grid; place-items: center; font-size: 16px; }
+    .cow-cell strong { display: block; font-size: 11px; }
+    .cow-cell small { display: block; color: var(--muted); font-size: 9px; margin-top: 2px; }
+    .tag { display: inline-flex; align-items: center; min-height: 22px; padding: 0 8px; border-radius: 20px; font-size: 9px; background: var(--green-soft); color: var(--green-dark); }
+    .tag.warn { background: var(--orange-soft); color: #97602c; }
+    .tag.neutral { background: #eff1ee; color: #667167; }
+    .row-action { border: 0; background: none; color: var(--green); font-size: 10px; padding: 5px; }
+    .toolbar { display: flex; align-items: center; gap: 9px; }
+    .search-box { height: 39px; width: 220px; background: #fff; border: 1px solid var(--line); border-radius: 7px; padding: 0 11px; display: flex; align-items: center; gap: 8px; }
+    .search-box span { color: #89948b; }
+    .search-box input { min-width: 0; border: 0; outline: 0; background: none; font-size: 11px; width: 100%; }
+    .search-box input:focus-visible { outline: none; }
+    .milk-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(270px, .8fr); gap: 15px; align-items: start; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .field { display: grid; gap: 6px; min-width: 0; }
+    .field.full { grid-column: 1 / -1; }
+    .field label { color: #637166; font-size: 10px; font-weight: 650; }
+    .field input, .field select, .field textarea { width: 100%; min-height: 41px; border: 1px solid #dfe6dc; border-radius: 6px; background: #fff; color: var(--ink); padding: 0 11px; font-size: 11px; }
+    .field textarea { min-height: 82px; padding: 10px 11px; resize: vertical; }
+    .field-hint { color: #8a958b; font-size: 9px; }
+    .form-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 17px; }
+    .segmented { display: inline-flex; background: #f0f4ee; border-radius: 7px; padding: 3px; gap: 3px; }
+    .segment { border: 0; background: transparent; color: var(--muted); border-radius: 5px; padding: 7px 11px; font-size: 10px; }
+    .segment.active { background: #fff; color: var(--green-dark); font-weight: 700; box-shadow: 0 1px 3px #24372c12; }
+    .cow-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .cow-card { border: 1px solid var(--line); background: #fff; border-radius: 9px; padding: 15px; }
+    .cow-card-head { display: flex; align-items: start; justify-content: space-between; }
+    .cow-card-title { display: flex; gap: 10px; align-items: center; }
+    .cow-card .cow-face { width: 39px; height: 39px; font-size: 20px; }
+    .cow-card-title strong { font-size: 12px; display: block; }
+    .cow-card-title small { color: var(--muted); font-size: 9px; display: block; margin-top: 3px; }
+    .cow-card-menu { border: 0; background: transparent; color: #89948b; font-size: 16px; }
+    .cow-card-stats { display: flex; justify-content: space-between; padding: 13px 0 11px; margin-top: 9px; border-top: 1px solid #eff2ed; border-bottom: 1px solid #eff2ed; }
+    .cow-card-stats span { display: block; color: var(--muted); font-size: 9px; }
+    .cow-card-stats strong { display: block; font-size: 12px; margin-top: 4px; }
+    .cow-card-foot { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; }
+    .cow-card-foot small { color: var(--muted); font-size: 9px; }
+    .health-tabs { display: flex; gap: 6px; overflow-x: auto; margin: 0 0 14px; border-bottom: 1px solid var(--line); }
+    .health-tab { border: 0; border-bottom: 2px solid transparent; background: none; color: var(--muted); padding: 10px 13px 11px; font-size: 11px; white-space: nowrap; }
+    .health-tab.active { color: var(--green-dark); border-color: var(--green); font-weight: 700; }
+    .event-kind { color: var(--green); font-weight: 650; }
+    .settings-layout { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 16px; align-items: start; }
+    .settings-menu { display: grid; gap: 4px; }
+    .settings-menu button { text-align: left; border: 0; padding: 11px 12px; border-radius: 6px; font-size: 11px; background: none; color: #647166; }
+    .settings-menu button.active { background: var(--green-soft); color: var(--green-dark); font-weight: 700; }
+    .user-role { min-width: 100px; padding: 5px 7px; border: 1px solid var(--line); border-radius: 5px; background: #fff; font-size: 10px; }
+    .upload-zone { border: 1px dashed #aac5a5; border-radius: 8px; background: #f8fbf6; padding: 18px; display: flex; align-items: center; gap: 13px; }
+    .upload-icon { flex: none; width: 39px; height: 39px; border-radius: 9px; background: var(--green-soft); display: grid; place-items: center; font-size: 19px; }
+    .upload-zone strong { display: block; font-size: 11px; }
+    .upload-zone small { display: block; color: var(--muted); font-size: 9px; margin-top: 4px; }
+    .upload-zone input { display: none; }
+    .upload-cta { margin-left: auto; white-space: nowrap; }
+    .notice { border-radius: 7px; padding: 11px 12px; background: #f2f6ef; color: #627363; font-size: 10px; line-height: 1.7; }
+    .empty-state { padding: 28px 12px; text-align: center; color: var(--muted); font-size: 11px; }
+    .dialog { border: 0; padding: 0; width: min(470px, calc(100% - 28px)); border-radius: 11px; box-shadow: 0 22px 70px #17291d38; color: var(--ink); }
+    .dialog::backdrop { background: #1e3025a3; }
+    .dialog-inner { padding: 21px; }
+    .dialog-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .dialog-heading h2 { margin: 0; font-size: 15px; }
+    .dialog-close { width: 30px; height: 30px; border: 0; border-radius: 6px; background: #f1f4ef; font-size: 17px; }
+    .toast { position: fixed; z-index: 20; left: 50%; bottom: 25px; transform: translate(-50%, 12px); background: #233c2b; color: #fff; border-radius: 8px; padding: 11px 16px; font-size: 11px; opacity: 0; pointer-events: none; transition: .2s; box-shadow: var(--shadow); }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .mobile-nav { display: none; }
+    @media (max-width: 1050px) {
+      main { padding-left: 24px; padding-right: 24px; }
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .cow-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 760px) {
+      .sidebar { display: none; }
+      main { margin-left: 0; padding: 17px 15px calc(94px + env(safe-area-inset-bottom)); }
+      .topbar { position: sticky; top: 0; z-index: 8; margin-bottom: 20px; min-height: 39px; background: var(--canvas); }
+      .crumb { font-size: 10px; }
+      .top-actions { display: flex; gap: 9px; }
+      .profile-chip .profile-copy { display: none; }
+      .icon-button { width: 36px; height: 36px; }
+      .profile-avatar { width: 35px; height: 35px; }
+      .page-heading { align-items: flex-start; margin: 3px 0 17px; }
+      h1 { font-size: 20px; }
+      .page-heading p { font-size: 10px; }
+      .page-heading .date-label { font-size: 10px; padding-top: 5px; }
+      .page-heading .button { min-height: 35px; padding: 0 10px; font-size: 10px; }
+      .stats-grid { gap: 9px; margin-bottom: 11px; }
+      .stat-card { min-height: 104px; padding: 12px; }
+      .stat-top { font-size: 9px; gap: 3px; }
+      .stat-icon { width: 27px; height: 27px; font-size: 14px; }
+      .stat-value { font-size: 22px; margin-top: 6px; }
+      .stat-note { font-size: 9px; }
+      .dashboard-grid, .milk-layout { grid-template-columns: minmax(0, 1fr); gap: 11px; }
+      .panel { padding: 14px; }
+      .panel + .panel { margin-top: 11px; }
+      .panel-heading h2 { font-size: 13px; }
+      .bar-chart { height: 126px; }
+      .quick-actions { gap: 7px; }
+      .quick-action { padding: 9px; min-height: 68px; font-size: 9px; }
+      .cow-grid { grid-template-columns: 1fr; gap: 9px; }
+      .search-box { width: auto; flex: 1; }
+      .toolbar { flex: 1; }
+      .page-heading:has(.toolbar) { flex-wrap: wrap; }
+      .page-heading .toolbar { width: 100%; }
+      .page-heading .toolbar .button { flex: none; }
+      .settings-layout { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+      .settings-menu { display: flex; overflow-x: auto; }
+      .settings-menu button { white-space: nowrap; }
+      .form-grid { gap: 11px; }
+      .upload-zone { flex-wrap: wrap; }
+      .upload-cta { margin-left: 52px; }
+      .mobile-nav { position: fixed; display: grid; z-index: 10; bottom: 0; left: 0; right: 0; grid-template-columns: repeat(5, minmax(0, 1fr)); background: #fff; border-top: 1px solid var(--line); padding: 6px 5px max(8px, env(safe-area-inset-bottom)); }
+      .mobile-nav .nav-item { min-width: 0; min-height: 53px; padding: 4px 2px; gap: 3px; border-radius: 7px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 9px; position: relative; }
+      .mobile-nav .nav-icon { font-size: 18px; }
+      .mobile-nav .nav-count { position: absolute; top: 1px; left: calc(50% + 7px); min-width: 15px; height: 15px; font-size: 8px; }
+      .toast { bottom: 82px; max-width: calc(100% - 26px); text-align: center; white-space: nowrap; }
+    }
+    @media (max-width: 380px) {
+      main { padding-left: 11px; padding-right: 11px; }
+      .stats-grid { gap: 7px; }
+      .stat-card { padding: 10px; }
+      .stat-top { font-size: 8px; }
+      .stat-value { font-size: 20px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .field.full { grid-column: auto; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="เมนูหลัก">
+      <div class="brand"><div class="brand-mark" aria-hidden="true">♧</div><div><div class="brand-name">ระบบฟาร์มโคนม</div><div class="brand-sub">จัดการข้อมูลฟาร์ม</div></div></div>
+      <div class="nav-label">เมนูหลัก</div>
+      <nav class="nav-list" id="desktopNav"></nav>
+      <div class="sidebar-bottom"><div class="sidebar-tools"><button class="icon-button" id="sidebarAlerts" aria-label="ดูการแจ้งเตือน">♧<i class="notification-dot"></i></button><div class="profile-chip"><div class="profile-avatar">👩🏻</div><div class="profile-copy"><strong>คุณมาลี</strong><small>เจ้าของฟาร์ม</small></div></div></div><div class="farm-mini"><div class="farm-avatar">♧</div><div><strong>ข้อมูลฟาร์ม</strong><small>พร้อมใช้งาน</small></div></div></div>
+    </aside>
+    <main>
+      <header class="topbar"><div class="crumb">ฟาร์มของฉัน <span aria-hidden="true">/</span> <span id="crumbPage">ภาพรวมฟาร์ม</span></div><div class="top-actions"><button class="icon-button" id="topAlerts" aria-label="ดูการแจ้งเตือน">♧<i class="notification-dot"></i></button><div class="profile-chip"><div class="profile-avatar">👩🏻</div><div class="profile-copy"><strong>คุณมาลี</strong><small>เจ้าของฟาร์ม</small></div></div></div></header>
+      <div class="content">
+        <section class="page active" id="page-home" aria-labelledby="homeTitle">
+          <div class="page-heading"><div><h1 id="homeTitle">สวัสดีตอนเช้า, คุณมาลี</h1><p>ภาพรวมฟาร์มของคุณในวันนี้</p></div><div class="date-label" id="todayLabel"></div></div>
+          <div class="stats-grid">
+            <article class="stat-card"><div class="stat-top"><span>น้ำนมวันนี้</span><span class="stat-icon">🥛</span></div><div class="stat-value"><span id="todayMilk">286</span> <span class="stat-unit">ลิตร</span></div><div class="stat-note">↑ 4.8% จากเมื่อวาน</div></article>
+            <article class="stat-card"><div class="stat-top"><span>โคทั้งหมด</span><span class="stat-icon">🐄</span></div><div class="stat-value"><span id="totalCows">24</span> <span class="stat-unit">ตัว</span></div><div class="stat-note">ให้นม 16 · พักเต้า 4</div></article>
+            <article class="stat-card"><div class="stat-top"><span>คุณภาพน้ำนม</span><span class="stat-icon">✳</span></div><div class="stat-value" id="qualityStatus">ผ่านเกณฑ์</div><div class="stat-note" id="qualitySummary">SCC 182,000 cells/ml</div></article>
+            <article class="stat-card"><div class="stat-top"><span>รายได้เดือนนี้</span><span class="stat-icon">฿</span></div><div class="stat-value" id="monthIncome">฿48,620</div><div class="stat-note">รายได้จากใบสรุปน้ำนม</div></article>
+          </div>
+          <div class="dashboard-grid">
+            <div>
+              <section class="panel"><div class="panel-heading"><div><h2>ปริมาณน้ำนมรวม</h2><p>ปริมาณน้ำนมที่บันทึกได้ในช่วง 7 วัน</p></div><select class="select-small" aria-label="ช่วงเวลาของกราฟ"><option>7 วันที่ผ่านมา</option><option>เดือนนี้</option></select></div><div class="chart-summary"><strong id="chartTotal">1,942</strong><span>ลิตร / สัปดาห์</span><span class="positive">↑ 4.8%</span></div><div class="bar-chart" id="milkChart" role="img" aria-label="กราฟปริมาณน้ำนมช่วง 7 วัน"></div><div class="chart-day-labels"><span>จ.</span><span>อ.</span><span>พ.</span><span>พฤ.</span><span>ศ.</span><span>ส.</span><span>อา.</span></div><div class="chart-legend"><span><i class="legend-dot"></i>รอบเช้า</span><span><i class="legend-dot dark"></i>รอบเย็น</span></div></section>
+              <section class="panel"><div class="panel-heading"><div><h2>ผลผลิตรายตัว</h2><p>ปริมาณน้ำนมรอบล่าสุด</p></div><button class="text-link" data-go="cows">ดูข้อมูลโค →</button></div><div class="table-wrap"><table><thead><tr><th>โคนม</th><th>ผลผลิตวันนี้</th><th>เทียบค่าเฉลี่ย</th><th>สถานะ</th></tr></thead><tbody id="topCowRows"></tbody></table></div></section>
+              <section class="panel"><div class="panel-heading"><div><h2>บันทึกล่าสุด</h2><p>รายการรีดนมล่าสุดของฟาร์ม</p></div><button class="text-link" data-go="milk">ดูทั้งหมด →</button></div><div class="table-wrap"><table><thead><tr><th>เวลา</th><th>โคนม</th><th>รอบรีด</th><th>ปริมาณ</th></tr></thead><tbody id="recentMilkRows"></tbody></table></div></section>
+            </div>
+            <div>
+              <section class="panel"><div class="panel-heading"><div><h2>รายการที่ต้องติดตาม</h2><p>กำหนดการและการแจ้งเตือน</p></div><span class="tag warn">3 รายการ</span></div><div class="alert-list">
+                <div class="alert-item"><div class="alert-symbol">◷</div><div><strong>เตรียมพักเต้า · มะลิ (C-008)</strong><small>กำหนดภายใน 7 วัน · 11 ต.ค. 2569</small><button class="alert-action" data-go="health">ดูข้อมูลโค →</button></div></div>
+                <div class="alert-item"><div class="alert-symbol red">✳</div><div><strong>ถึงกำหนดฉีดวัคซีน · ใบเตย (C-014)</strong><small>วัคซีนปากและเท้าเปื่อย · วันนี้</small><button class="alert-action" data-go="health">บันทึกการดูแล →</button></div></div>
+                <div class="alert-item"><div class="alert-symbol">♡</div><div><strong>ตรวจท้อง · ดาว (C-003)</strong><small>นัดหมายในอีก 3 วัน · 7 ต.ค. 2569</small><button class="alert-action" data-go="health">ดูปฏิทิน →</button></div></div>
+              </div></section>
+              <section class="panel"><div class="panel-heading"><div><h2>สถานะฝูงโค</h2><p>แบ่งตามสถานะการให้นม</p></div></div><div class="cow-status"><div class="donut"><strong>24</strong></div><div class="status-legend"><div class="status-row"><span class="status-name">กำลังให้นม</span><strong>16</strong></div><div class="status-row"><span class="status-name">พักเต้า</span><strong>4</strong></div><div class="status-row"><span class="status-name">โครุ่น / อื่น ๆ</span><strong>4</strong></div></div></div></section>
+              <section class="panel"><div class="panel-heading"><div><h2>ทางลัด</h2><p>งานที่ทำบ่อย</p></div></div><div class="quick-actions"><button class="quick-action" data-go="milk"><span>🥛</span>บันทึกรีดนม</button><button class="quick-action" data-go="cows"><span>🐄</span>เพิ่มข้อมูลโค</button><button class="quick-action" data-go="health"><span>♡</span>บันทึกสุขภาพ</button><button class="quick-action" data-go="home" data-action="import"><span>▧</span>นำเข้าใบสรุป</button><button class="quick-action" data-go="profile"><span>♙</span>จัดการผู้ใช้</button><button class="quick-action" data-go="milk"><span>⌕</span>วิเคราะห์ผลผลิต</button></div></section>
+            </div>
+          </div>
+          <section class="panel" id="importPanel" style="margin-top:15px"><div class="panel-heading"><div><h2>นำเข้าข้อมูลใบสรุป อ.ส.ค.</h2><p>เพิ่มผลตรวจคุณภาพน้ำนมและรายได้จากเอกสาร</p></div><button class="text-link" id="hideImport">ซ่อน</button></div><div class="upload-zone"><div class="upload-icon">▧</div><div><strong id="fileLabel">เลือกไฟล์ใบสรุป</strong><small>รองรับ PDF, JPG, PNG · สูงสุด 10 MB</small></div><label class="button button-light upload-cta" for="milkStatement">เลือกไฟล์</label><input id="milkStatement" type="file" accept="application/pdf,image/png,image/jpeg"></div><div style="display:flex;justify-content:flex-end;margin-top:11px"><button class="button button-primary" id="simulateOcr">จำลองอ่านข้อมูลจากใบสรุป</button></div><div id="ocrResult" style="display:none;margin-top:14px"></div></section>
+        </section>
+
+        <section class="page" id="page-milk" aria-labelledby="milkTitle">
+          <div class="page-heading"><div><h1 id="milkTitle">บันทึกการรีดนม</h1><p>จัดการปริมาณน้ำนมรวมและรายตัว</p></div><span class="date-label" id="milkDateLabel"></span></div>
+          <div class="milk-layout"><section class="panel"><div class="panel-heading"><div><h2>เพิ่มรายการรีดนม</h2><p>บันทึกน้ำหนักน้ำนมที่ชั่งได้</p></div><div class="segmented" role="tablist" aria-label="รูปแบบการบันทึก"><button class="segment active" data-mode="individual">รายตัว</button><button class="segment" data-mode="total">ยอดรวม</button></div></div>
+            <form id="milkForm"><div class="form-grid"><div class="field"><label for="milkDate">วันที่รีด</label><input id="milkDate" name="date" type="date" required></div><div class="field"><label for="milkRound">รอบรีด</label><select id="milkRound" name="round"><option value="เช้า">รอบเช้า</option><option value="เย็น">รอบเย็น</option></select></div><div class="field individual-only"><label for="milkCow">เลือกโค</label><select id="milkCow" name="cowId" required></select></div><div class="field"><label for="milkAmount">ปริมาณน้ำนม (ลิตร)</label><input id="milkAmount" name="amount" type="number" min="0.1" step="0.1" placeholder="เช่น 18.5" required></div><div class="field full"><label for="milkNote">หมายเหตุ <span style="font-weight:400;color:#8a958b">(ไม่บังคับ)</span></label><input id="milkNote" name="note" placeholder="เช่น ปริมาณลดลงจากรอบก่อน"></div></div><div class="form-footer"><button class="button button-light" type="reset">ล้างข้อมูล</button><button class="button button-primary" type="submit">บันทึกข้อมูล</button></div></form>
+          </section><div><section class="panel"><div class="panel-heading"><div><h2>สรุปวันนี้</h2><p>ยอดบันทึกแยกตามรอบรีด</p></div></div><div class="status-legend"><div class="status-row"><span>รอบเช้า</span><strong id="morningTotal">286 ลิตร</strong></div><div class="status-row"><span>รอบเย็น</span><strong id="eveningTotal">0 ลิตร</strong></div><div class="status-row" style="border-top:1px solid var(--line);padding-top:9px"><span>รวมทั้งวัน</span><strong id="dailyTotal">286 ลิตร</strong></div></div></section><section class="panel"><div class="panel-heading"><div><h2>ผลผลิตรายตัว</h2><p>ค่าเฉลี่ยต่อวัน · 7 วัน</p></div></div><div class="alert-list" id="milkCowSummary"></div></section></div></div>
+          <section class="panel" style="margin-top:15px"><div class="panel-heading"><div><h2>ประวัติการรีดนม</h2><p>รายการบันทึกล่าสุด</p></div><select class="select-small" id="milkHistoryFilter" aria-label="กรองประวัติ"><option value="all">ทุกโค</option></select></div><div class="table-wrap"><table><thead><tr><th>วันที่</th><th>โคนม</th><th>รอบรีด</th><th>ปริมาณ</th><th>หมายเหตุ</th></tr></thead><tbody id="milkHistoryRows"></tbody></table></div></section>
+        </section>
+
+        <section class="page" id="page-cows" aria-labelledby="cowsTitle">
+          <div class="page-heading"><div><h1 id="cowsTitle">ข้อมูลโคนม</h1><p>ทะเบียนโคและผลผลิตรายตัว</p></div><button class="button button-primary" id="addCow">＋ เพิ่มโค</button></div>
+          <div class="panel" style="margin-bottom:13px;padding:12px 14px"><div class="toolbar"><label class="search-box"><span>⌕</span><input id="cowSearch" type="search" placeholder="ค้นหาชื่อหรือรหัสโค" aria-label="ค้นหาโค"></label><select class="select-small" id="cowStatusFilter" aria-label="กรองสถานะ"><option value="all">ทุกสถานะ</option><option value="ให้นม">กำลังให้นม</option><option value="พักเต้า">พักเต้า</option><option value="โครุ่น">โครุ่น</option></select></div></div>
+          <div class="cow-grid" id="cowGrid"></div>
+          <section class="panel" style="margin-top:15px"><div class="panel-heading"><div><h2>เปรียบเทียบผลผลิต</h2><p>ปริมาณน้ำนมเฉลี่ยต่อวัน · 7 วันล่าสุด</p></div><span class="tag">ลิตร / วัน</span></div><div id="comparisonBars"></div></section>
+        </section>
+
+        <section class="page" id="page-health" aria-labelledby="healthTitle">
+          <div class="page-heading"><div><h1 id="healthTitle">สุขภาพและการผสมพันธุ์</h1><p>ติดตามสุขภาพ วัคซีน และกำหนดการสืบพันธุ์</p></div><button class="button button-primary" id="addHealthEvent">＋ เพิ่มรายการ</button></div>
+          <div class="stats-grid"><article class="stat-card"><div class="stat-top"><span>กำหนดดูแลวันนี้</span><span class="stat-icon">✳</span></div><div class="stat-value">1 <span class="stat-unit">รายการ</span></div><div class="stat-note warn">วัคซีน · ใบเตย</div></article><article class="stat-card"><div class="stat-top"><span>นัดหมายผสมพันธุ์</span><span class="stat-icon">♡</span></div><div class="stat-value">2 <span class="stat-unit">ตัว</span></div><div class="stat-note">ภายใน 7 วัน</div></article><article class="stat-card"><div class="stat-top"><span>กำลังตั้งท้อง</span><span class="stat-icon">◷</span></div><div class="stat-value">6 <span class="stat-unit">ตัว</span></div><div class="stat-note">ตรวจท้องตามกำหนด 1 ตัว</div></article><article class="stat-card"><div class="stat-top"><span>พักเต้าถัดไป</span><span class="stat-icon">☼</span></div><div class="stat-value">7 <span class="stat-unit">วัน</span></div><div class="stat-note">มะลิ · C-008</div></article></div>
+          <section class="panel"><div class="health-tabs" role="tablist"><button class="health-tab active" data-health-filter="all">รายการทั้งหมด</button><button class="health-tab" data-health-filter="ผสมพันธุ์">ผสมพันธุ์ / ตั้งท้อง</button><button class="health-tab" data-health-filter="สุขภาพ">สุขภาพ / การดูแล</button></div><div class="table-wrap"><table><thead><tr><th>วันที่</th><th>โคนม</th><th>ประเภท</th><th>รายละเอียด</th><th>กำหนดครั้งถัดไป</th></tr></thead><tbody id="healthRows"></tbody></table></div></section>
+          <section class="panel" style="margin-top:15px"><div class="panel-heading"><div><h2>กำหนดการที่ใกล้ถึง</h2><p>รายการอัตโนมัติจากข้อมูลโค</p></div></div><div class="alert-list"><div class="alert-item"><div class="alert-symbol">◷</div><div><strong>มะลิ (C-008) · คำนวณวันพักเต้า</strong><small>แนะนำพักเต้าวันที่ 11 ต.ค. 2569 · ก่อนกำหนดคลอด 60 วัน</small></div></div><div class="alert-item"><div class="alert-symbol red">✳</div><div><strong>ใบเตย (C-014) · วัคซีนปากและเท้าเปื่อย</strong><small>กำหนดฉีดวันนี้ · รอบถัดไป 4 เม.ย. 2570</small></div></div></div></section>
+        </section>
+
+        <section class="page" id="page-profile" aria-labelledby="profileTitle">
+          <div class="page-heading"><div><h1 id="profileTitle">โปรไฟล์และการตั้งค่า</h1><p>จัดการบัญชีผู้ใช้และสิทธิ์การเข้าถึง</p></div></div>
+          <div class="settings-layout"><nav class="settings-menu" aria-label="การตั้งค่า"><button class="active" data-setting="users">ผู้ใช้งานและสิทธิ์</button><button data-setting="farm">ข้อมูลฟาร์ม</button><button data-setting="alerts">การแจ้งเตือน</button></nav><div>
+            <section class="panel setting-page active" id="setting-users"><div class="panel-heading"><div><h2>ผู้ใช้งานฟาร์ม</h2><p>กำหนดบทบาทและสิทธิ์ในการใช้งาน</p></div><button class="button button-primary" id="addUser">＋ เพิ่มผู้ใช้</button></div><div class="table-wrap"><table><thead><tr><th>ชื่อผู้ใช้</th><th>อีเมล</th><th>บทบาท</th><th>สถานะ</th></tr></thead><tbody id="userRows"></tbody></table></div></section>
+            <section class="panel setting-page" id="setting-farm" style="display:none"><div class="panel-heading"><div><h2>ข้อมูลฟาร์ม</h2><p>ข้อมูลพื้นฐานสำหรับการจัดการฟาร์ม</p></div></div><form id="farmForm"><div class="form-grid"><div class="field"><label for="farmName">ชื่อฟาร์ม</label><input id="farmName" name="farmName" placeholder="ใส่ชื่อฟาร์ม"></div><div class="field"><label for="farmOwner">เจ้าของฟาร์ม</label><input id="farmOwner" name="farmOwner" value="คุณมาลี"></div><div class="field"><label for="farmCode">รหัสฟาร์ม</label><input id="farmCode" name="farmCode" value="BSF-001"></div><div class="field"><label for="farmSize">จำนวนโคทั้งหมด</label><input value="24 ตัว" readonly></div></div><div class="form-footer"><button class="button button-primary" type="submit">บันทึกข้อมูล</button></div></form></section>
+            <section class="panel setting-page" id="setting-alerts" style="display:none"><div class="panel-heading"><div><h2>การแจ้งเตือน</h2><p>รายการเตือนที่ต้องการติดตามในฟาร์ม</p></div></div><div class="alert-list"><label class="status-row" style="padding:10px 0"><span>เตือนวันพักเต้าและกำหนดคลอด</span><input type="checkbox" data-notification="dryOff" checked></label><label class="status-row" style="padding:10px 0"><span>เตือนวัคซีนและการดูแลสุขภาพ</span><input type="checkbox" data-notification="healthCare" checked></label><label class="status-row" style="padding:10px 0"><span>เตือนกำหนดผสมพันธุ์และตรวจท้อง</span><input type="checkbox" data-notification="breeding" checked></label><label class="status-row" style="padding:10px 0"><span>เตือนผลผลิตหรือคุณภาพน้ำนมผิดปกติ</span><input type="checkbox" data-notification="milkQuality" checked></label></div><div class="form-footer"><button class="button button-primary" id="saveAlertSettings">บันทึกการตั้งค่า</button></div></section>
+          </div></div>
+        </section>
+      </div>
+    </main>
+    <nav class="mobile-nav" id="mobileNav" aria-label="เมนูหลัก"></nav>
+  </div>
+
+  <dialog class="dialog" id="cowDialog"><div class="dialog-inner"><div class="dialog-heading"><h2 id="cowDialogTitle">เพิ่มข้อมูลโค</h2><button class="dialog-close" type="button" data-close-dialog="cowDialog" aria-label="ปิด">×</button></div><form id="cowForm"><input type="hidden" name="originalId"><div class="form-grid"><div class="field"><label for="cowIdInput">รหัสโค</label><input id="cowIdInput" name="id" required placeholder="เช่น C-025"></div><div class="field"><label for="cowNameInput">ชื่อโค</label><input id="cowNameInput" name="name" required placeholder="ชื่อโค"></div><div class="field"><label for="cowBreedInput">สายพันธุ์</label><select id="cowBreedInput" name="breed"><option>โฮลสไตน์ฟรีเชียน</option><option>บราวน์สวิส</option><option>ลูกผสม</option><option>อื่น ๆ</option></select></div><div class="field"><label for="cowSexInput">เพศ</label><select id="cowSexInput" name="sex"><option>เมีย</option><option>ผู้</option></select></div><div class="field"><label for="cowBirthInput">วันเกิด</label><input id="cowBirthInput" name="birth" type="date"></div><div class="field"><label for="cowStageInput">สถานะ</label><select id="cowStageInput" name="stage"><option>ให้นม</option><option>พักเต้า</option><option>โครุ่น</option></select></div></div><div class="form-footer"><button class="button button-light" type="button" data-close-dialog="cowDialog">ยกเลิก</button><button class="button button-primary" type="submit">บันทึกข้อมูลโค</button></div></form></div></dialog>
+
+  <dialog class="dialog" id="eventDialog"><div class="dialog-inner"><div class="dialog-heading"><h2>เพิ่มสุขภาพ / ผสมพันธุ์</h2><button class="dialog-close" type="button" data-close-dialog="eventDialog" aria-label="ปิด">×</button></div><form id="eventForm"><div class="form-grid"><div class="field"><label for="eventCow">เลือกโค</label><select id="eventCow" name="cowId" required></select></div><div class="field"><label for="eventCategory">ประเภท</label><select id="eventCategory" name="category"><option value="สุขภาพ">สุขภาพ / การดูแล</option><option value="ผสมพันธุ์">ผสมพันธุ์</option><option value="ตั้งท้อง">ตรวจท้อง / ตั้งท้อง</option><option value="พักเต้า">พักเต้า</option></select></div><div class="field"><label for="eventType">รายการ</label><select id="eventType" name="type"><option>วัคซีน</option><option>ยา</option><option>ถ่ายพยาธิ</option><option>อาการผิดปกติ</option><option>ผสมเทียม</option><option>ตรวจท้อง</option><option>พักเต้า</option></select></div><div class="field"><label for="eventDate">วันที่</label><input id="eventDate" name="date" type="date" required></div><div class="field full"><label for="eventNote">รายละเอียด</label><textarea id="eventNote" name="note" placeholder="ชื่อวัคซีน ยาที่ใช้ หรือรายละเอียดเพิ่มเติม"></textarea></div><div class="field full"><label for="nextEventDate">กำหนดครั้งถัดไป <span style="font-weight:400;color:#8a958b">(ถ้ามี)</span></label><input id="nextEventDate" name="nextDate" type="date"></div></div><div class="form-footer"><button class="button button-light" type="button" data-close-dialog="eventDialog">ยกเลิก</button><button class="button button-primary" type="submit">บันทึกรายการ</button></div></form></div></dialog>
+
+  <dialog class="dialog" id="userDialog"><div class="dialog-inner"><div class="dialog-heading"><h2>เพิ่มผู้ใช้งาน</h2><button class="dialog-close" type="button" data-close-dialog="userDialog" aria-label="ปิด">×</button></div><form id="userForm"><div class="form-grid"><div class="field full"><label for="userNameInput">ชื่อผู้ใช้งาน</label><input id="userNameInput" name="name" required placeholder="ชื่อและนามสกุล"></div><div class="field full"><label for="userEmailInput">อีเมล</label><input id="userEmailInput" name="email" type="email" required placeholder="name@example.com"></div><div class="field full"><label for="userRoleInput">บทบาท</label><select id="userRoleInput" name="role"><option>ผู้ปฏิบัติงาน</option><option>เจ้าของฟาร์ม</option></select></div></div><div class="notice" style="margin-top:13px">ต้นแบบนี้แสดงการจัดการบัญชีและสิทธิ์เท่านั้น ยังไม่มีระบบยืนยันตัวตนจริง</div><div class="form-footer"><button class="button button-light" type="button" data-close-dialog="userDialog">ยกเลิก</button><button class="button button-primary" type="submit">เพิ่มผู้ใช้</button></div></form></div></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const today = new Date().toISOString().slice(0, 10);
+      const dateLabel = new Intl.DateTimeFormat('th-TH', { dateStyle: 'long' }).format(new Date());
+      const state = { cows: [], milk: [], events: [], users: [], quality: [], farm: null, notifications: null };
+      let mode = 'individual';
+      let healthFilter = 'all';
+      const navItems = [
+        { id: 'milk', label: 'รีดนม', icon: '🥛' },
+        { id: 'cows', label: 'ข้อมูลโค', icon: '🐄' },
+        { id: 'health', label: 'สุขภาพ', icon: '♡', badge: '2' },
+        { id: 'home', label: 'หน้าหลัก', icon: '⌂' },
+        { id: 'profile', label: 'โปรไฟล์', icon: '♙' }
+      ];
+      const titles = { home: 'ภาพรวมฟาร์ม', milk: 'บันทึกการรีดนม', cows: 'ข้อมูลโคนม', health: 'สุขภาพและการผสมพันธุ์', profile: 'โปรไฟล์และการตั้งค่า' };
+      const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+      async function api(path, options = {}) {
+        const response = await fetch(`/api${path}`, {
+          ...options,
+          headers: { 'Content-Type': 'application/json', ...options.headers }
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้');
+        return data;
+      }
+      const saveJson = (path, method, body) => api(path, { method, body: JSON.stringify(body) });
+      const cow = id => state.cows.find(item => item.id === id);
+      const money = amount => new Intl.NumberFormat('th-TH').format(amount);
+      const formatDate = value => value ? new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00`)) : '—';
+      const icon = '🐄';
+      function showToast(message) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.classList.add('show');
+        clearTimeout(showToast.timer);
+        showToast.timer = setTimeout(() => toast.classList.remove('show'), 2600);
+      }
+      function drawNav() {
+        const markup = navItems.map(item => `<button class="nav-item ${item.id === 'home' ? 'active' : ''}" data-go="${item.id}" aria-label="${item.label}"><span class="nav-icon" aria-hidden="true">${item.icon}</span><span>${item.label}</span>${item.badge ? `<span class="nav-count">${item.badge}</span>` : ''}</button>`).join('');
+        document.getElementById('desktopNav').innerHTML = markup;
+        document.getElementById('mobileNav').innerHTML = markup;
+      }
+      function openPage(id) {
+        document.querySelectorAll('.page').forEach(page => page.classList.toggle('active', page.id === `page-${id}`));
+        document.querySelectorAll('.nav-item[data-go]').forEach(item => item.classList.toggle('active', item.dataset.go === id));
+        document.getElementById('crumbPage').textContent = titles[id];
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      function renderCowSelectors() {
+        const options = state.cows.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} (${escapeHtml(item.id)})</option>`).join('');
+        document.getElementById('milkCow').innerHTML = options;
+        document.getElementById('eventCow').innerHTML = options;
+        document.getElementById('milkHistoryFilter').innerHTML = '<option value="all">ทุกโค</option>' + state.cows.map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('');
+      }
+      function renderDashboard() {
+        const recordsToday = state.milk.filter(item => item.date === today);
+        const morning = recordsToday.filter(item => item.round === 'เช้า').reduce((sum, item) => sum + Number(item.amount), 0);
+        const evening = recordsToday.filter(item => item.round === 'เย็น').reduce((sum, item) => sum + Number(item.amount), 0);
+        const todayTotal = morning + evening || 286;
+        document.getElementById('todayLabel').textContent = dateLabel;
+        document.getElementById('todayMilk').textContent = money(todayTotal);
+        document.getElementById('totalCows').textContent = state.cows.length;
+        document.getElementById('milkDateLabel').textContent = dateLabel;
+        document.getElementById('morningTotal').textContent = `${money(morning || 286)} ลิตร`;
+        document.getElementById('eveningTotal').textContent = `${money(evening)} ลิตร`;
+        document.getElementById('dailyTotal').textContent = `${money(todayTotal)} ลิตร`;
+        const latestQuality = state.quality[0];
+        if (latestQuality) {
+          document.getElementById('qualityStatus').textContent = latestQuality.scc <= 200000 ? 'ผ่านเกณฑ์' : 'ควรตรวจสอบ';
+          document.getElementById('qualitySummary').textContent = `SCC ${money(latestQuality.scc)} cells/ml`;
+        }
+        const monthIncome = state.quality.filter(item => item.date?.startsWith(today.slice(0, 7))).reduce((sum, item) => sum + Number(item.income || 0), 0);
+        document.getElementById('monthIncome').textContent = `฿${money(monthIncome)}`;
+        const morningBars = [72, 78, 74, 83, 80, 88, 86];
+        const eveningBars = [61, 68, 65, 72, 69, 77, Math.max(8, Math.min(80, Math.round(todayTotal / 4)))];
+        document.getElementById('milkChart').innerHTML = morningBars.map((height, index) => `<div class="chart-day"><i class="chart-bar" style="height:${height}%"></i><i class="chart-bar second" style="height:${eveningBars[index]}%"></i></div>`).join('');
+        const rows = [...state.cows].filter(item => item.stage === 'ให้นม').sort((a, b) => b.yield - a.yield).slice(0, 4);
+        document.getElementById('topCowRows').innerHTML = rows.map(item => `<tr><td><div class="cow-cell"><div class="cow-face">${icon}</div><div><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.id)}</small></div></div></td><td><strong>${escapeHtml(item.yield.toFixed(1))} ลิตร</strong></td><td style="color:var(--green)">↑ ปกติ</td><td><span class="tag">ปกติ</span></td></tr>`).join('');
+        const latest = [...state.milk].sort((a, b) => `${b.date}${b.time || ''}`.localeCompare(`${a.date}${a.time || ''}`)).slice(0, 4);
+        document.getElementById('recentMilkRows').innerHTML = latest.length ? latest.map(item => `<tr><td>${formatDate(item.date)}</td><td>${escapeHtml(cow(item.cowId)?.name || 'ยอดรวม')}</td><td>${escapeHtml(item.round)}</td><td><strong>${escapeHtml(item.amount)} ลิตร</strong></td></tr>`).join('') : '<tr><td colspan="4" class="empty-state">บันทึกการรีดนมแล้ว รายการจะแสดงที่นี่</td></tr>';
+        document.getElementById('chartTotal').textContent = money(Math.round(todayTotal * 6.8));
+      }
+      function renderCows() {
+        const query = document.getElementById('cowSearch').value.trim().toLocaleLowerCase('th');
+        const filter = document.getElementById('cowStatusFilter').value;
+        const cows = state.cows.filter(item => (!query || `${item.id} ${item.name}`.toLocaleLowerCase('th').includes(query)) && (filter === 'all' || item.stage === filter));
+        document.getElementById('cowGrid').innerHTML = cows.length ? cows.map(item => `<article class="cow-card"><div class="cow-card-head"><div class="cow-card-title"><div class="cow-face">${icon}</div><div><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.id)} · ${escapeHtml(item.breed)}</small></div></div><button class="cow-card-menu" data-edit-cow="${escapeHtml(item.id)}" aria-label="แก้ไข ${escapeHtml(item.name)}">···</button></div><div class="cow-card-stats"><div><span>ผลผลิตเฉลี่ย</span><strong>${Number(item.yield).toFixed(1)} ลิตร/วัน</strong></div><div><span>วันเกิด</span><strong>${formatDate(item.birth)}</strong></div></div><div class="cow-card-foot"><span class="tag ${item.stage === 'พักเต้า' ? 'warn' : item.stage === 'โครุ่น' ? 'neutral' : ''}">${escapeHtml(item.stage)}</span><button class="row-action" data-edit-cow="${escapeHtml(item.id)}">แก้ไขข้อมูล</button></div></article>`).join('') : '<div class="panel empty-state">ไม่พบข้อมูลโคที่ค้นหา</div>';
+        const top = [...state.cows].filter(item => item.yield > 0).sort((a, b) => b.yield - a.yield).slice(0, 5);
+        const max = Math.max(1, ...top.map(item => item.yield));
+        document.getElementById('comparisonBars').innerHTML = top.map((item, index) => `<div style="display:grid;grid-template-columns:72px 1fr 44px;gap:10px;align-items:center;margin:12px 0;font-size:10px"><span>${escapeHtml(item.name)}</span><div style="height:10px;background:#edf2eb;border-radius:6px;overflow:hidden"><div style="height:100%;width:${Math.round(item.yield / max * 100)}%;background:${index === 0 ? 'var(--green)' : '#a9c99e'};border-radius:6px"></div></div><strong>${item.yield.toFixed(1)}</strong></div>`).join('');
+      }
+      function renderMilkHistory() {
+        const filter = document.getElementById('milkHistoryFilter').value;
+        const records = [...state.milk].filter(item => filter === 'all' || item.cowId === filter).sort((a, b) => b.date.localeCompare(a.date));
+        document.getElementById('milkHistoryRows').innerHTML = records.length ? records.map(item => `<tr><td>${formatDate(item.date)}</td><td>${escapeHtml(cow(item.cowId)?.name || 'ยอดรวม')}</td><td>${escapeHtml(item.round)}</td><td><strong>${escapeHtml(item.amount)} ลิตร</strong></td><td>${escapeHtml(item.note || '—')}</td></tr>`).join('') : '<tr><td colspan="5" class="empty-state">ยังไม่มีประวัติการรีดนมในรายการนี้</td></tr>';
+        const producing = state.cows.filter(item => item.yield > 0).slice(0, 4);
+        document.getElementById('milkCowSummary').innerHTML = producing.map(item => `<div class="alert-item"><div class="alert-symbol">🐄</div><div style="flex:1"><strong>${escapeHtml(item.name)} · ${escapeHtml(item.id)}</strong><small>เฉลี่ย ${Number(item.yield).toFixed(1)} ลิตร/วัน</small></div><span class="tag">ปกติ</span></div>`).join('');
+      }
+      function renderHealth() {
+        const events = [...state.events].filter(item => healthFilter === 'all' || item.category === healthFilter || (healthFilter === 'สุขภาพ' && item.category === 'พักเต้า')).sort((a, b) => b.date.localeCompare(a.date));
+        document.getElementById('healthRows').innerHTML = events.length ? events.map(item => `<tr><td>${formatDate(item.date)}</td><td><div class="cow-cell"><div class="cow-face">${icon}</div><div><strong>${escapeHtml(cow(item.cowId)?.name || 'ไม่พบโค')}</strong><small>${escapeHtml(item.cowId)}</small></div></div></td><td><span class="event-kind">${escapeHtml(item.type)}</span></td><td>${escapeHtml(item.note || '—')}</td><td>${formatDate(item.nextDate)}</td></tr>`).join('') : '<tr><td colspan="5" class="empty-state">ยังไม่มีรายการ</td></tr>';
+      }
+      function renderUsers() {
+        document.getElementById('userRows').innerHTML = state.users.map((item, index) => `<tr><td><div class="cow-cell"><div class="profile-avatar" style="width:30px;height:30px;font-size:13px">${index ? '♙' : '👩🏻'}</div><strong>${escapeHtml(item.name)}</strong></div></td><td>${escapeHtml(item.email)}</td><td><select class="user-role" data-user-id="${item.id}" aria-label="สิทธิ์ของ ${escapeHtml(item.name)}"><option ${item.role === 'เจ้าของฟาร์ม' ? 'selected' : ''}>เจ้าของฟาร์ม</option><option ${item.role === 'ผู้ปฏิบัติงาน' ? 'selected' : ''}>ผู้ปฏิบัติงาน</option></select></td><td><span class="tag">ใช้งาน</span></td></tr>`).join('');
+      }
+      function renderSettings() {
+        if (state.farm) {
+          document.getElementById('farmName').value = state.farm.name || '';
+          document.getElementById('farmOwner').value = state.farm.owner || '';
+          document.getElementById('farmCode').value = state.farm.code || '';
+        }
+        if (state.notifications) {
+          Object.entries(state.notifications).forEach(([key, value]) => {
+            const checkbox = document.querySelector(`[data-notification="${key}"]`);
+            if (checkbox) checkbox.checked = Boolean(value);
+          });
+        }
+      }
+      function renderAll() { renderCowSelectors(); renderDashboard(); renderCows(); renderMilkHistory(); renderHealth(); renderUsers(); renderSettings(); }
+      function openCowDialog(item) {
+        const form = document.getElementById('cowForm');
+        form.reset();
+        form.elements.originalId.value = item?.id || '';
+        form.elements.id.value = item?.id || '';
+        form.elements.id.readOnly = Boolean(item);
+        form.elements.name.value = item?.name || '';
+        form.elements.breed.value = item?.breed || 'โฮลสไตน์ฟรีเชียน';
+        form.elements.sex.value = item?.sex || 'เมีย';
+        form.elements.birth.value = item?.birth || '';
+        form.elements.stage.value = item?.stage || 'ให้นม';
+        document.getElementById('cowDialogTitle').textContent = item ? 'แก้ไขข้อมูลโค' : 'เพิ่มข้อมูลโค';
+        document.getElementById('cowDialog').showModal();
+      }
+      drawNav();
+      document.getElementById('milkDate').value = today;
+      document.getElementById('eventDate').value = today;
+      api('/bootstrap').then(data => {
+        Object.assign(state, data);
+        renderAll();
+      }).catch(error => {
+        console.error(error);
+        showToast(`เชื่อมต่อฐานข้อมูลไม่ได้: ${error.message}`);
+      });
+      document.addEventListener('click', event => {
+        const navigation = event.target.closest('[data-go]');
+        if (navigation) {
+          if (navigation.dataset.action === 'import') document.getElementById('importPanel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          else openPage(navigation.dataset.go);
+        }
+        const editor = event.target.closest('[data-edit-cow]');
+        if (editor) openCowDialog(cow(editor.dataset.editCow));
+        const closer = event.target.closest('[data-close-dialog]');
+        if (closer) document.getElementById(closer.dataset.closeDialog).close();
+      });
+      ['topAlerts', 'sidebarAlerts'].forEach(id => document.getElementById(id).addEventListener('click', () => { openPage('health'); showToast('แสดงรายการกำหนดการและการแจ้งเตือน'); }));
+      document.getElementById('addCow').addEventListener('click', () => openCowDialog());
+      document.getElementById('cowSearch').addEventListener('input', renderCows);
+      document.getElementById('cowStatusFilter').addEventListener('change', renderCows);
+      document.getElementById('cowForm').addEventListener('submit', async event => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const data = new FormData(form);
+        const originalId = data.get('originalId');
+        if (!originalId && cow(data.get('id'))) { showToast('รหัสโคนี้มีอยู่แล้ว'); return; }
+        const previous = originalId ? cow(originalId) : null;
+        const item = { id: data.get('id').trim(), name: data.get('name').trim(), breed: data.get('breed'), sex: data.get('sex'), birth: data.get('birth'), stage: data.get('stage') };
+        try {
+          const saved = await saveJson(originalId ? `/cows/${encodeURIComponent(originalId)}` : '/cows', originalId ? 'PUT' : 'POST', item);
+          if (previous) state.cows[state.cows.indexOf(previous)] = saved; else state.cows.unshift(saved);
+          renderAll(); form.closest('dialog').close(); showToast(previous ? 'บันทึกการแก้ไขข้อมูลโคแล้ว' : 'เพิ่มข้อมูลโคแล้ว');
+        } catch (error) { showToast(error.message); }
+      });
+      document.querySelectorAll('.segment').forEach(button => button.addEventListener('click', () => {
+        mode = button.dataset.mode;
+        document.querySelectorAll('.segment').forEach(item => item.classList.toggle('active', item === button));
+        document.querySelectorAll('.individual-only').forEach(item => item.style.display = mode === 'individual' ? '' : 'none');
+        document.getElementById('milkCow').required = mode === 'individual';
+      }));
+      document.getElementById('milkForm').addEventListener('submit', async event => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        const record = { date: data.get('date'), round: data.get('round'), amount: Number(data.get('amount')).toFixed(1), cowId: mode === 'individual' ? data.get('cowId') : '', note: data.get('note').trim() };
+        try {
+          const saved = await saveJson('/milk', 'POST', record);
+          state.milk.unshift(saved);
+          if (saved.cowId && cow(saved.cowId)) cow(saved.cowId).yield = Number(saved.amount);
+          event.currentTarget.reset(); document.getElementById('milkDate').value = today; renderAll(); showToast('บันทึกปริมาณน้ำนมแล้ว');
+        } catch (error) { showToast(error.message); }
+      });
+      document.getElementById('milkHistoryFilter').addEventListener('change', renderMilkHistory);
+      document.getElementById('addHealthEvent').addEventListener('click', () => { document.getElementById('eventDate').value = today; document.getElementById('eventDialog').showModal(); });
+      document.getElementById('eventForm').addEventListener('submit', async event => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        const item = { cowId: data.get('cowId'), category: data.get('category'), type: data.get('type'), date: data.get('date'), note: data.get('note').trim(), nextDate: data.get('nextDate') };
+        try {
+          state.events.unshift(await saveJson('/events', 'POST', item));
+          renderHealth(); event.currentTarget.reset(); document.getElementById('eventDialog').close(); showToast('บันทึกข้อมูลสุขภาพและการดูแลแล้ว');
+        } catch (error) { showToast(error.message); }
+      });
+      document.querySelectorAll('.health-tab').forEach(button => button.addEventListener('click', () => {
+        healthFilter = button.dataset.healthFilter;
+        document.querySelectorAll('.health-tab').forEach(tab => tab.classList.toggle('active', tab === button));
+        renderHealth();
+      }));
+      document.querySelectorAll('[data-setting]').forEach(button => button.addEventListener('click', () => {
+        document.querySelectorAll('[data-setting]').forEach(item => item.classList.toggle('active', item === button));
+        document.querySelectorAll('.setting-page').forEach(page => page.style.display = page.id === `setting-${button.dataset.setting}` ? '' : 'none');
+      }));
+      document.getElementById('addUser').addEventListener('click', () => document.getElementById('userDialog').showModal());
+      document.getElementById('userForm').addEventListener('submit', async event => {
+        event.preventDefault(); const data = new FormData(event.currentTarget);
+        const item = { name: data.get('name').trim(), email: data.get('email').trim(), role: data.get('role') };
+        try {
+          state.users.push(await saveJson('/users', 'POST', item));
+          renderUsers(); event.currentTarget.reset(); document.getElementById('userDialog').close(); showToast('เพิ่มผู้ใช้งานแล้ว');
+        } catch (error) { showToast(error.message); }
+      });
+      document.getElementById('userRows').addEventListener('change', async event => {
+        const userId = Number(event.target.dataset.userId);
+        const user = state.users.find(item => item.id === userId);
+        if (user) {
+          try { await saveJson(`/users/${userId}`, 'PATCH', { role: event.target.value }); user.role = event.target.value; showToast('บันทึกสิทธิ์ผู้ใช้งานแล้ว'); }
+          catch (error) { event.target.value = user.role; showToast(error.message); }
+        }
+      });
+      document.getElementById('farmForm').addEventListener('submit', async event => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        try {
+          state.farm = await saveJson('/farm', 'PUT', { name: form.get('farmName'), owner: form.get('farmOwner'), code: form.get('farmCode') });
+          showToast('บันทึกข้อมูลฟาร์มแล้ว');
+        } catch (error) { showToast(error.message); }
+      });
+      document.getElementById('saveAlertSettings').addEventListener('click', async () => {
+        const settings = Object.fromEntries([...document.querySelectorAll('[data-notification]')].map(input => [input.dataset.notification, input.checked]));
+        try {
+          state.notifications = await saveJson('/notifications', 'PUT', settings);
+          showToast('บันทึกการตั้งค่าการแจ้งเตือนแล้ว');
+        } catch (error) { showToast(error.message); }
+      });
+      document.getElementById('milkStatement').addEventListener('change', event => { document.getElementById('fileLabel').textContent = event.target.files[0]?.name || 'เลือกไฟล์ใบสรุป'; });
+      document.getElementById('simulateOcr').addEventListener('click', () => {
+        const file = document.getElementById('milkStatement').files[0];
+        if (!file) { showToast('เลือกไฟล์ใบสรุปก่อน'); return; }
+        const result = document.getElementById('ocrResult');
+        result.style.display = 'block';
+        result.innerHTML = `<div class="notice" style="margin-bottom:11px">ผลอ่านข้อมูลตัวอย่างจาก <strong>${escapeHtml(file.name)}</strong> · ต้นแบบนี้ยังไม่เชื่อมต่อ OCR จริง กรุณาตรวจทานค่าก่อนบันทึก</div><div class="form-grid"><div class="field"><label for="qualityDate">วันที่ส่งน้ำนม</label><input id="qualityDate" type="date" value="${today}"></div><div class="field"><label for="qualityScc">SCC (cells/ml)</label><input id="qualityScc" type="number" value="182000"></div><div class="field"><label for="qualityFat">% Fat</label><input id="qualityFat" type="number" step="0.01" value="3.65"></div><div class="field"><label for="qualitySnf">SNF (%)</label><input id="qualitySnf" type="number" step="0.01" value="8.55"></div><div class="field"><label for="qualityMbTest">MB Test</label><select id="qualityMbTest"><option>ผ่าน</option><option>ไม่ผ่าน</option></select></div><div class="field"><label for="qualityIncome">รายได้ (บาท)</label><input id="qualityIncome" type="number" value="48620"></div></div><div class="form-footer"><button class="button button-primary" id="saveOcrResult">ยืนยันข้อมูลตัวอย่าง</button></div>`;
+        document.getElementById('saveOcrResult').addEventListener('click', async () => {
+          const record = {
+            date: document.getElementById('qualityDate').value,
+            scc: document.getElementById('qualityScc').value,
+            fat: document.getElementById('qualityFat').value,
+            snf: document.getElementById('qualitySnf').value,
+            mbTest: document.getElementById('qualityMbTest').value,
+            income: document.getElementById('qualityIncome').value,
+            sourceFile: file.name
+          };
+          try {
+            state.quality.unshift(await saveJson('/quality', 'POST', record));
+            renderDashboard(); showToast('บันทึกข้อมูลคุณภาพน้ำนมแล้ว');
+            result.innerHTML = '<div class="notice">บันทึกข้อมูลคุณภาพน้ำนมและรายได้เรียบร้อยแล้ว</div>';
+          } catch (error) { showToast(error.message); }
+        });
+      });
+      document.getElementById('hideImport').addEventListener('click', () => { document.getElementById('importPanel').style.display = 'none'; });
+    })();
+  </script>
+</body>
+</html>
